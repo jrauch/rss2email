@@ -12,6 +12,8 @@ INTERVAL: (optional) the frequency this will run at
 This lambda should be deployed as a scheduled event.  It'll default to 60
 
 * Required IAM policy:
+AWSLambdaBasicExecutionRole plus:
+
 {
   "Version":"2012-10-17",
   "Statement":[
