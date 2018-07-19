@@ -32,7 +32,7 @@ def rss_to_email_handler(event, context):
 	email["to"] = environ.get("TO_EMAIL")
 
 	for feed in feeds:
-		print(feed)
+		#print(feed)
 		d = feedparser.parse(feed, modified=lastrun)
 		
 		if d.status == 200:
@@ -46,7 +46,7 @@ def rss_to_email_handler(event, context):
 				if pubdate > time:
 					email["subject"] = "[r2e] {}".format(entry.title)
 					email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
-					print("{} {}".format(email["subject"],email["body"]))
+					#print("{} {}".format(email["subject"],email["body"]))
 					send_email(email)
 
 if __name__ == "__main__":
