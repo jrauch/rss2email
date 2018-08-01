@@ -7,6 +7,8 @@ import boto3
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
+import requests
+from hashlib import sha256
 
 def send_email(email):
 	msg = MIMEMultipart()
@@ -25,17 +27,39 @@ def send_email(email):
 def rss_to_email_handler(event, context):
 	feeds = [ x.strip() for x in environ.get("FEEDS").split(',')]
 
-	time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=60)
+	interval = environ.get("INTERVAL") # this acts as a first-run break - I don't want to see things since the beginning of time.
+	interval = 60 if not interval else int(interval)
+
+	preamble = environ.get("PREAMBLE")
+	preamble = "" if not preamble else preamble
+
+	bucketname = environ.get("S3BUCKET")
+	bucketname = "REPLACEME-rss2email" if not bucketname else bucketname
+
+	time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval)
 	lastrun = time.strftime("%a, %d %b %Y %H:%M:%S GMT")
 	email = {}
 	email["from"] = environ.get("FROM_EMAIL")
 	email["to"] = environ.get("TO_EMAIL")
+	s3 = boto3.client("s3")
 
 	for feed in feeds:
-		#print(feed)
-		d = feedparser.parse(feed, modified=lastrun)
-		
-		if d.status == 200:
+		print(feed)
+		f = requests.get(feed)
+		if f.status_code == 200:
+			d = feedparser.parse(f.text)
+
+			old_feed_hash = sha256(feed.encode("utf-8")).hexdigest()
+			response = s3.list_objects_v2(Bucket=bucketname, Prefix=old_feed_hash)
+			if response["KeyCount"] > 0:
+				old_feed_contents = s3.get_object(Bucket=bucketname, Key=old_feed_hash)
+				old_feed = feedparser.parse(old_feed_contents["Body"].read())
+				old_feed_index = {}
+				for entry in old_feed.entries:
+					old_feed_index[entry.title] = entry.link # if the subject and link are the same, they're the same 8)
+			else:
+				old_feed_index = {}
+
 			for entry in d.entries:
 				if "published" in entry:
 					pubdate = dateutil.parser.parse(entry.published)
@@ -43,11 +67,14 @@ def rss_to_email_handler(event, context):
 						pubdate = dateutil.parser.parse(entry.updated)
 				else:
 					continue
-				if pubdate > time:
-					email["subject"] = "[r2e] {}".format(entry.title)
-					email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
-					#print("{} {}".format(email["subject"],email["body"]))
-					send_email(email)
+				if entry.title not in old_feed_index or old_feed_index[entry.title] != entry.link:
+					if pubdate > time: 
+						email["subject"] = "{}{}".format(preamble,entry.title)
+						email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
+						print("{} {} {}".format(email["subject"], pubdate, time))
+						send_email(email)
+
+			s3.put_object(Bucket=bucketname, Key=old_feed_hash, Body=f.text)
 
 if __name__ == "__main__":
 	rss_to_email_handler(None, None)
