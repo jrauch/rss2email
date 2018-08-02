@@ -29,7 +29,7 @@ def rss_to_email_handler(event, context):
 	feeds = [ x.strip() for x in environ.get("FEEDS").split(',')]
 
 	interval = environ.get("INTERVAL") # this acts as a first-run break - I don't want to see things since the beginning of time.
-	interval = 60 if not interval else int(interval)
+	interval = 360 if not interval else int(interval)
 
 	preamble = environ.get("PREAMBLE")
 	preamble = "" if not preamble else preamble
