@@ -1,7 +1,7 @@
 * To build func for lambda deployment:
 mkdir tempfunc
 cp rss2email.py tempfunc
-(cd tempfunc && pip install -r ../requirements -t `pwd` && zip ../rss2email.zip -r *)
+(cd tempfunc && pip install -r ../requirements.txt -t `pwd` && zip ../rss2email.zip -r *)
 
 * Required environment variables:
 FROM_EMAIL: email to send to (e.g. vulns@latacora.com)

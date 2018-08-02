@@ -9,6 +9,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 import requests
 from hashlib import sha256
+#from ipdb import set_trace
 
 def send_email(email):
 	msg = MIMEMultipart()
@@ -46,11 +47,13 @@ def rss_to_email_handler(event, context):
 	for feed in feeds:
 		print(feed)
 		f = requests.get(feed)
+		print(f.status_code)
 		if f.status_code == 200:
 			d = feedparser.parse(f.text)
 
 			old_feed_hash = sha256(feed.encode("utf-8")).hexdigest()
 			response = s3.list_objects_v2(Bucket=bucketname, Prefix=old_feed_hash)
+			#set_trace()
 			if response["KeyCount"] > 0:
 				old_feed_contents = s3.get_object(Bucket=bucketname, Key=old_feed_hash)
 				old_feed = feedparser.parse(old_feed_contents["Body"].read())
@@ -68,13 +71,17 @@ def rss_to_email_handler(event, context):
 				else:
 					continue
 				if entry.title not in old_feed_index or old_feed_index[entry.title] != entry.link:
-					if pubdate > time: 
+					if len(old_feed_index) > 0 or pubdate > time: 
 						email["subject"] = "{}{}".format(preamble,entry.title)
 						email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
 						print("{} {} {}".format(email["subject"], pubdate, time))
 						send_email(email)
+					else:
+						#set_trace()
+						print("timeout {}".format(time-pubdate))
 
 			s3.put_object(Bucket=bucketname, Key=old_feed_hash, Body=f.text)
 
 if __name__ == "__main__":
+	print("hi")
 	rss_to_email_handler(None, None)
