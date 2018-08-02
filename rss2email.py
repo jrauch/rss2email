@@ -75,7 +75,7 @@ def rss_to_email_handler(event, context):
 					email["subject"] = "{}{}".format(preamble,entry.title)
 					email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
 					print("{} {} {}".format(email["subject"], pubdate, time))
-					#send_email(email)
+					send_email(email)
 
 			s3.put_object(Bucket=bucketname, Key=old_feed_hash, Body=f.text)
 
