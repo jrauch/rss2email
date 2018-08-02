@@ -29,7 +29,7 @@ def rss_to_email_handler(event, context):
 	feeds = [ x.strip() for x in environ.get("FEEDS").split(',')]
 
 	interval = environ.get("INTERVAL") # this acts as a first-run break - I don't want to see things since the beginning of time.
-	interval = 360 if not interval else int(interval)
+	interval = 1440 if not interval else int(interval)
 
 	preamble = environ.get("PREAMBLE")
 	preamble = "" if not preamble else preamble
@@ -70,15 +70,12 @@ def rss_to_email_handler(event, context):
 						pubdate = dateutil.parser.parse(entry.updated)
 				else:
 					continue
-				if entry.title not in old_feed_index or old_feed_index[entry.title] != entry.link:
-					if len(old_feed_index) > 0 or pubdate > time: 
-						email["subject"] = "{}{}".format(preamble,entry.title)
-						email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
-						print("{} {} {}".format(email["subject"], pubdate, time))
-						send_email(email)
-					else:
-						#set_trace()
-						print("timeout {}".format(time-pubdate))
+				if pubdate > time and (entry.title not in old_feed_index or old_feed_index[entry.title] != entry.link):
+					#if len(old_feed_index) > 0 or pubdate > time: 
+					email["subject"] = "{}{}".format(preamble,entry.title)
+					email["body"] = "{} (details at: {})".format(entry.summary if "summary" in entry else "", entry.link)
+					print("{} {} {}".format(email["subject"], pubdate, time))
+					#send_email(email)
 
 			s3.put_object(Bucket=bucketname, Key=old_feed_hash, Body=f.text)
 
