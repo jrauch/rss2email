@@ -15,7 +15,7 @@ enum34==1.1.6
 feedparser==5.2.1
 Flask==1.0.2
 future==0.16.0
-idna==2.7
+idna==3.1
 itsdangerous==0.24
 jmespath==0.9.3
 jsonschema==2.6.0
