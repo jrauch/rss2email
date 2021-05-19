@@ -19,7 +19,7 @@ idna==2.7
 itsdangerous==0.24
 jmespath==0.9.3
 jsonschema==2.6.0
-MarkupSafe==1.0
+MarkupSafe==2.0.1
 poyo==0.4.1
 python-dateutil==2.7.3
 PyYAML==5.1
